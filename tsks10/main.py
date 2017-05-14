@@ -3,9 +3,12 @@ import scipy
 import scipy.io.wavfile
 import matplotlib
 import matplotlib.pyplot as plot
+import math
 from scipy.signal import butter, lfilter, freqz
 
 from scipy.fftpack import fft, ifft
+
+import random
 
 SAMPLE_RATE = 400 * 10**3
 SAMPLE_SPACING = 1 / SAMPLE_RATE
@@ -39,7 +42,7 @@ def plot_fft(transformed, sample_rate, sample_amount):
     plot.plot(xf, 2.0/sample_amount * np.abs(transformed[0:sample_amount // 2]))
 
 
-def iq_demodulate(sample_rate, data, carrier_freq):
+def remove_carrier_frequency(sample_rate, data, carrier_freq):
     sample_spacing = 1 / sample_rate
     sample_amount = len(data)
 
@@ -50,24 +53,40 @@ def iq_demodulate(sample_rate, data, carrier_freq):
     #Multiply the data with the cos wave
     modulated = data * cosine;
 
-    plot_fft(fft(modulated), sample_rate, sample_amount)
+    #plot_fft(fft(modulated), sample_rate, sample_amount)
 
     #Filter the modulated signal
     filtered = butter_lowpass_filter(modulated, CUTOFF_FREQ, sample_rate)
-    plot_fft(fft(filtered), sample_rate, sample_amount)
+    #plot_fft(fft(filtered), sample_rate, sample_amount)
 
-    plot.plot(filtered)
+    #plot.plot(filtered)
 
-    scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
+    #scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
+
+    return filtered
+
+def find_echo_delay(data):
+    samples_until_echo_start = 1000
+
+    start_samples = data[:samples_until_echo_start]
+
+    correlated = np.correlate(data, start_samples, mode='valid')
+
+    plot.plot(correlated);
+    #plot.plot(data);
+
 
 def main():
     (fs, data) = scipy.io.wavfile.read("signal.wav")
 
     transformed = fft(data)
 
-    plot_fft(transformed, fs, len(data))
+    interesting_signal = remove_carrier_frequency(fs, data, CARRIER_FREQ)
 
-    iq_demodulate(fs, data, CARRIER_FREQ)
+    find_echo_delay(interesting_signal)
+
+    #plot_fft(transformed, fs, len(data))
+
 
     plot.show()
 
