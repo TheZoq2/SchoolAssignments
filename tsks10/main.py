@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import numpy as np
 import scipy
 import scipy.io.wavfile
@@ -62,14 +64,15 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq):
 
     #plot.plot(filtered)
 
-    #scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
+    scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
 
     return filtered
 
 #Returns the sample at which the echo starts affecting the signal
 def find_echo_delay(data):
     # To avoid waiting for the long calculation to finish
-    return 164003
+    #return 164003
+    return 163999
 
     samples_until_echo_start = 100000
 
@@ -82,6 +85,10 @@ def find_echo_delay(data):
     correlated = np.correlate(check_samples, start_samples, mode='valid')
 
     correlated /= np.max(np.abs(correlated))
+
+    plot.plot(check_samples)
+    plot.plot(correlated)
+    plot.plot(start_samples)
 
     return correlated.argmax() + samples_until_echo_start
 
@@ -115,10 +122,10 @@ def main():
 
     without_echo = remove_echo(interesting_signal, echo_delay)
 
-    scipy.io.wavfile.write("filtered.wav", SAMPLE_RATE, without_echo / 4000.)
+    scipy.io.wavfile.write("no_echo.wav", SAMPLE_RATE, without_echo / 4000.)
 
-    plot.plot(data)
-    plot.plot(without_echo)
+    #plot.plot(data)
+    #plot.plot(without_echo)
 
 
     plot.show()
