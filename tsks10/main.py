@@ -86,9 +86,9 @@ def find_echo_delay(data):
 
     correlated /= np.max(np.abs(correlated))
 
-    plot.plot(check_samples)
+    #plot.plot(check_samples)
     plot.plot(correlated)
-    plot.plot(start_samples)
+    #plot.plot(start_samples)
 
     return correlated.argmax() + samples_until_echo_start
 
@@ -96,15 +96,21 @@ def find_echo_delay(data):
 def remove_echo(data, echo_start):
     echo_amplitude = 0.9;
 
-    if len(data) > echo_start*2:
-        print("running echo removal step, len: {}", len(data))
-        clean = data[:echo_start]
-        cleaned = data[echo_start:echo_start*2] - echo_amplitude*clean
+    result = np.array(data)
 
-        new_data = np.append(cleaned, data[echo_start*2:])
-        return np.append(clean, remove_echo(new_data, echo_start))
-    else:
-        return data
+    for i in range(echo_start, len(result)):
+        result[i] = result[i] - echo_amplitude * data[i-echo_start]
+
+    return result
+    #if len(data) > echo_start*2:
+    #    print("running echo removal step, len: {}", len(data))
+    #    clean = data[:echo_start]
+    #    cleaned = data[echo_start:echo_start*2] - echo_amplitude*clean
+
+    #    new_data = np.append(cleaned, data[echo_start*2:])
+    #    return np.append(clean, remove_echo(new_data, echo_start))
+    #else:
+    #    return data
 
 
 def main():
