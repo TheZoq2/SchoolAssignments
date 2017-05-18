@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plot
 import math
 from scipy.signal import butter, lfilter, freqz
+import sounddevice
 
 from scipy.fftpack import fft, ifft
 
@@ -50,9 +51,9 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
     sample_amount = len(data)
 
     #generate a cosine wave at the correct sample rate
-    samples = np.linspace(0.0, sample_amount*sample_spacing, sample_amount)
-    cosine = 2 * np.cos(np.pi * 2 * carrier_freq * samples + delta)
-    sine = 2 * np.cos(np.pi * 2 * carrier_freq * samples + delta)
+    samples = np.linspace(0, sample_amount*sample_spacing, sample_amount)
+    cosine = 2 * np.cos((np.pi * 2 * carrier_freq * samples))
+    sine = 2 * np.sin((np.pi * 2 * carrier_freq * samples))
 
     #Multiply the data with the cos wave
     modulated_i = data * cosine;
@@ -69,7 +70,10 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
 
     #scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
 
-    return (filtered_i, filtered_q)
+    final_i = filtered_i*np.cos(delta) - filtered_q*np.sin(delta)
+    final_q = filtered_i*np.sin(delta) + filtered_q*np.cos(delta)
+
+    return (final_i, final_q)
 
 
 def signal_similarity(signals):
@@ -90,7 +94,7 @@ def find_delta(sample_rate, data, carrier_freq):
     result = np.linspace(0, 0, step_amount)
 
     for i in range(0,step_amount):
-        delta = math.pi * 2 * (i/step_amount)
+        delta = math.pi / 2 * (i/step_amount)
 
         signals = remove_carrier_frequency(sample_rate, data, carrier_freq, delta)
 
@@ -152,18 +156,25 @@ def main():
     transformed = fft(data)
     #plot_fft(transformed, fs, len(data))
 
-    find_delta(fs, data, CARRIER_FREQ)
-    interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi * 2 * 18/100)
+    step_amount=20
+    for i in range(0, step_amount):
+        print(i)
+        #find_delta(fs, data, CARRIER_FREQ)
+        interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * i/step_amount)
+        #interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 10/100)
 
-    normalized_signal = interesting_signals[0] / np.max(np.abs(interesting_signals[0]))
+        normalized_signal = interesting_signals[0] / np.max(np.abs(interesting_signals[0]))
 
-    echo_delay = find_echo_delay(normalized_signal)
+        echo_delay = find_echo_delay(normalized_signal)
 
-    print("Echo delay in seconds: {}, in samples: {}".format(echo_delay / SAMPLE_RATE, echo_delay))
+        print("Echo delay in seconds: {}, in samples: {}".format(echo_delay / SAMPLE_RATE, echo_delay))
 
-    without_echo = remove_echo(interesting_signals[0], echo_delay)
+        without_echo = remove_echo(interesting_signals[0], echo_delay)
 
-    scipy.io.wavfile.write("no_echo.wav", SAMPLE_RATE, without_echo / 4000.)
+        #scipy.io.wavfile.write("no_echo.wav", SAMPLE_RATE, without_echo / 4000.)
+        print(SAMPLE_RATE)
+        downsampled = without_echo[0:len(without_echo):10]
+        sounddevice.play(downsampled/8000, 44100, blocking=True)
 
     #plot.plot(data)
     #plot.plot(without_echo)
