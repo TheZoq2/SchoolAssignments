@@ -52,8 +52,16 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
 
     #generate a cosine wave at the correct sample rate
     samples = np.linspace(0, sample_amount*sample_spacing, sample_amount)
-    cosine = 2 * np.cos((np.pi * 2 * carrier_freq * samples))
-    sine = 2 * np.sin((np.pi * 2 * carrier_freq * samples))
+    #cosine = np.linspace(0,0,sample_amount);
+    #sine = np.linspace(0,0,sample_amount);
+    #for i in range(0, sample_amount):
+    #    t = i / sample_amount
+    #    cosine[i] = np.cos(np.pi * 2 * carrier_freq * t + delta)
+    #    sine[i] = np.sin(np.pi * 2 * carrier_freq * t + delta)
+
+    cosine = 2 * np.cos((np.pi * 2 * carrier_freq * samples + delta))
+    sine = 2 * np.sin((np.pi * 2 * carrier_freq * samples + delta))
+    #plot.plot(sine)
 
     #Multiply the data with the cos wave
     modulated_i = data * cosine;
@@ -70,8 +78,13 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
 
     #scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
 
-    final_i = filtered_i*np.cos(delta) - filtered_q*np.sin(delta)
-    final_q = filtered_i*np.sin(delta) + filtered_q*np.cos(delta)
+    final_i = filtered_i
+    final_q = filtered_q
+    #final_i = filtered_i*np.cos(delta) - filtered_q*np.sin(delta)
+    #final_q = filtered_i*np.sin(delta) + filtered_q*np.cos(delta)
+
+    plot.plot(cosine[:3000])
+    #plot.plot(final_q)
 
     return (final_i, final_q)
 
@@ -108,7 +121,6 @@ def find_delta(sample_rate, data, carrier_freq):
 #Returns the sample at which the echo starts affecting the signal
 def find_echo_delay(data):
     # To avoid waiting for the long calculation to finish
-    #return 164003
     return 163999
 
     samples_until_echo_start = 100000
@@ -154,9 +166,9 @@ def main():
     (fs, data) = scipy.io.wavfile.read("signal.wav")
 
     transformed = fft(data)
-    #plot_fft(transformed, fs, len(data))
+    plot_fft(transformed, fs, len(data))
 
-    step_amount=20
+    step_amount=1
     for i in range(0, step_amount):
         print(i)
         #find_delta(fs, data, CARRIER_FREQ)
@@ -174,7 +186,7 @@ def main():
         #scipy.io.wavfile.write("no_echo.wav", SAMPLE_RATE, without_echo / 4000.)
         print(SAMPLE_RATE)
         downsampled = without_echo[0:len(without_echo):10]
-        sounddevice.play(downsampled/8000, 44100, blocking=True)
+        #sounddevice.play(downsampled/8000, 44100, blocking=True)
 
     #plot.plot(data)
     #plot.plot(without_echo)

@@ -1,0 +1,93 @@
+
+\documentclass[10pt,twocolumn]{article}
+
+% Följande rad ska göra det möjligt att använda svenska bokstäver, som å, ä, ö. Kravet är 
+% då att filen sparas i UTF-8-format. Om detta inte fungerar för dig, så kan du alltid 
+% använda dig av {\aa} för å, \"a för ä och \"o för ö.
+\usepackage[utf8]{inputenc}
+
+% Följande väljer typsnitt som är kloner av Times New Roman, Helvetica och lämpliga till
+% dem anpassade matematiktypsnitt.
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+
+%  Följande tillhandahåller miljön spver­ba­tim som är lämplig för att typsätta programkod.
+\usepackage{spverbatim}
+
+\raggedbottom
+\sloppy
+
+\title{Laborationsrapport i TSKS10 \emph{Signaler, Information och Kommunikation}}
+
+\author{Frans Skarman \\ frask812, 9509085552 }
+
+\date{18 maj, 2017}
+
+\begin{document}
+
+\maketitle
+
+\section{Inledning}
+
+Denna laboration gick ut på att demodulera en iq modulerad signal som var given
+tillsammans med andra signaler i en .wav fil. I och Q delen av signalen skulle
+bestå av två separata melodier följt av två ordspråk.
+
+Utöver den sökta signalen innehöll även datan två signaler med andra bärfrekvenser
+och ett simulerat eko med okänd tidsfördröjning. Hela signalen var även tidsförskjuten
+för att simulera osynkroniserade klockor på sändare och mottagare. Datan innehöll
+även två stycken cosinus-signaler med närliggande frekvenser som kunde utnyttjas för
+att bestämma ekots fördröjning.
+
+I uppgiften ingick en lista på vilka bärfrekvenser huvudsignalerna kunde användas och
+en maxgräns på ekots tidsfördröjning som var $500ms$
+
+
+
+\section{Metod}
+
+Alla beräkingar gjordes med python-biblioteken scipy och numpy. För att lyssna på de demodulerade
+signalerna användes initialt programmet audacity men det byttes senare ut mot python-biblioteket
+sounddevice.
+
+Det första som gjordes var att fouriertransformera den givna signalen och plotta
+dess spektrum. Genom att analysera spektrumet visades det att signalen bestog av tre
+delsignaler med frekvenser $FREKVENSER$ samt två cosinussignaler med $FREKVENSER$.
+
+En funktion för att göra de första stegen i demodulationen IQ signalerna skrevs. Denna
+funktion multiplicerade den givna signalen med en en signal $cos(2\pi*f_c*t)$ där $f_c$
+är bärfrekvensen för signalen. Den resulterande signalen filtreras sedan med ett 
+butterworth-lågpassfilter med gränsfrekvens $5 kHz$. Gränsfrekvensen valdes eftersom
+att signalernas bandbredd var ungefär $5 kHz$
+
+Denna funktion användes för att demodulera de tre nyttosignalerna och resultatet spelades
+upp med audacity. Genom att lyssna på signalerna hördes att signalen med $f_c=151kHz$ var
+den sökta signalen och resten av arbetet fokuserade på denna signal
+
+
+
+
+
+\section{Resultat}
+
+Den sökta informationen är:
+\begin{itemize}
+\item Bärfrekvensen för nyttosignalen är $f_c=...$
+\item ...
+\end{itemize}
+
+\clearpage
+
+\section*{Min Python-kod:}
+\begin{spverbatim}
+clear all
+close all
+
+for k=1:...
+  ...
+end
+
+plot(...,...)
+\end{spverbatim}
+
+\end{document}
