@@ -47,6 +47,7 @@ def plot_fft(transformed, sample_rate, sample_amount):
     plot.plot(xf, 2.0/sample_amount * np.abs(transformed[0:sample_amount // 2]))
 
 def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
+    print(delta)
     sample_spacing = 1 / sample_rate
     sample_amount = len(data)
 
@@ -59,13 +60,15 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
     #    cosine[i] = np.cos(np.pi * 2 * carrier_freq * t + delta)
     #    sine[i] = np.sin(np.pi * 2 * carrier_freq * t + delta)
 
-    cosine = 2 * np.cos((np.pi * 2 * carrier_freq * samples + delta))
-    sine = 2 * np.sin((np.pi * 2 * carrier_freq * samples + delta))
+    cosine = 2 * np.cos((np.pi * 2 * carrier_freq * samples))
+    sine = 2 * np.sin((np.pi * 2 * carrier_freq * samples))
     #plot.plot(sine)
 
     #Multiply the data with the cos wave
     modulated_i = data * cosine;
     modulated_q = data * sine;
+
+
 
     #plot_fft(fft(modulated), sample_rate, sample_amount)
 
@@ -74,16 +77,19 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
     filtered_q = butter_lowpass_filter(modulated_q, CUTOFF_FREQ, sample_rate)
     #plot_fft(fft(filtered), sample_rate, sample_amount)
 
+
+    #plot.plot(filtered_q[:441000])
+    #plot.plot(filtered_i[:441000])
     #plot.plot(filtered)
 
     #scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
 
     final_i = filtered_i
     final_q = filtered_q
-    #final_i = filtered_i*np.cos(delta) - filtered_q*np.sin(delta)
-    #final_q = filtered_i*np.sin(delta) + filtered_q*np.cos(delta)
+    final_i = filtered_i*np.cos(delta) - filtered_q*np.sin(delta)
+    final_q = filtered_i*np.sin(delta) + filtered_q*np.cos(delta)
 
-    plot.plot(cosine[:3000])
+    #plot.plot(cosine[:3000])
     #plot.plot(final_q)
 
     return (final_i, final_q)
@@ -107,12 +113,12 @@ def find_delta(sample_rate, data, carrier_freq):
     result = np.linspace(0, 0, step_amount)
 
     for i in range(0,step_amount):
-        delta = math.pi / 2 * (i/step_amount)
+        delta = np.pi / 2 * (i/step_amount)
 
         signals = remove_carrier_frequency(sample_rate, data, carrier_freq, delta)
 
         similarity = signal_similarity(signals)
-        print(similarity, delta)
+        print(similarity, delta, i)
         result[i] = similarity
 
     plot.plot(result)
@@ -151,28 +157,19 @@ def remove_echo(data, echo_start):
         result[i] = result[i] - echo_amplitude * data[i-echo_start]
 
     return result
-    #if len(data) > echo_start*2:
-    #    print("running echo removal step, len: {}", len(data))
-    #    clean = data[:echo_start]
-    #    cleaned = data[echo_start:echo_start*2] - echo_amplitude*clean
-
-    #    new_data = np.append(cleaned, data[echo_start*2:])
-    #    return np.append(clean, remove_echo(new_data, echo_start))
-    #else:
-    #    return data
 
 
 def main():
     (fs, data) = scipy.io.wavfile.read("signal.wav")
 
     transformed = fft(data)
-    plot_fft(transformed, fs, len(data))
+    #plot_fft(transformed, fs, len(data))
 
     step_amount=1
     for i in range(0, step_amount):
         print(i)
         #find_delta(fs, data, CARRIER_FREQ)
-        interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * i/step_amount)
+        interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, np.pi / 2 * i/step_amount)
         #interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 10/100)
 
         normalized_signal = interesting_signals[0] / np.max(np.abs(interesting_signals[0]))
@@ -184,9 +181,8 @@ def main():
         without_echo = remove_echo(interesting_signals[0], echo_delay)
 
         #scipy.io.wavfile.write("no_echo.wav", SAMPLE_RATE, without_echo / 4000.)
-        print(SAMPLE_RATE)
         downsampled = without_echo[0:len(without_echo):10]
-        #sounddevice.play(downsampled/8000, 44100, blocking=True)
+        sounddevice.play(downsampled/8000, 44100, blocking=True)
 
     #plot.plot(data)
     #plot.plot(without_echo)
