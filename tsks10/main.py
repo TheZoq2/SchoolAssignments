@@ -17,7 +17,7 @@ SAMPLE_RATE = 400 * 10**3
 SAMPLE_SPACING = 1 / SAMPLE_RATE
 
 #CARRIER_FREQ = 75 * 10**3
-CARRIER_FREQ = 150 * 10**3
+CARRIER_FREQ = 151 * 10**3
 #CARRIER_FREQ = 113 * 10**3
 
 CUTOFF_FREQ = 5000
@@ -53,12 +53,6 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
 
     #generate a cosine wave at the correct sample rate
     samples = np.linspace(0, sample_amount*sample_spacing, sample_amount)
-    #cosine = np.linspace(0,0,sample_amount);
-    #sine = np.linspace(0,0,sample_amount);
-    #for i in range(0, sample_amount):
-    #    t = i / sample_amount
-    #    cosine[i] = np.cos(np.pi * 2 * carrier_freq * t + delta)
-    #    sine[i] = np.sin(np.pi * 2 * carrier_freq * t + delta)
 
     cosine = 2 * np.cos((np.pi * 2 * carrier_freq * samples))
     sine = 2 * np.sin((np.pi * 2 * carrier_freq * samples))
@@ -95,6 +89,7 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
     return (final_i, final_q)
 
 
+
 def signal_similarity(signals):
     (signal1, signal2) = signals
     # The amount of samples to compare
@@ -127,7 +122,7 @@ def find_delta(sample_rate, data, carrier_freq):
 #Returns the sample at which the echo starts affecting the signal
 def find_echo_delay(data):
     # To avoid waiting for the long calculation to finish
-    return 163999
+    return 164000
 
     samples_until_echo_start = 100000
 
@@ -154,7 +149,7 @@ def remove_echo(data, echo_start):
     result = np.array(data)
 
     for i in range(echo_start, len(result)):
-        result[i] = result[i] - echo_amplitude * data[i-echo_start]
+        result[i] = result[i] - echo_amplitude * result[i-echo_start]
 
     return result
 
@@ -169,8 +164,9 @@ def main():
     for i in range(0, step_amount):
         print(i)
         #find_delta(fs, data, CARRIER_FREQ)
-        interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, np.pi / 2 * i/step_amount)
-        #interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 10/100)
+        #interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, np.pi / 2 * i/step_amount)
+        #interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 43/100)
+        interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 64/100)
 
         normalized_signal = interesting_signals[0] / np.max(np.abs(interesting_signals[0]))
 
@@ -178,11 +174,16 @@ def main():
 
         print("Echo delay in seconds: {}, in samples: {}".format(echo_delay / SAMPLE_RATE, echo_delay))
 
-        without_echo = remove_echo(interesting_signals[0], echo_delay)
+        without_echo_i = remove_echo(interesting_signals[0], echo_delay)
+        without_echo_q = remove_echo(interesting_signals[1], echo_delay)
 
         #scipy.io.wavfile.write("no_echo.wav", SAMPLE_RATE, without_echo / 4000.)
-        downsampled = without_echo[0:len(without_echo):10]
-        sounddevice.play(downsampled/8000, 44100, blocking=True)
+        downsampled_i = without_echo_i[0:len(without_echo_i):10]
+        downsampled_q = without_echo_q[0:len(without_echo_q):10]
+        sounddevice.play(downsampled_i/8000, 44100, blocking=True)
+        sounddevice.play(downsampled_q/8000, 44100, blocking=True)
+        #scipy.io.wavfile.write("no_echo_i.wav", SAMPLE_RATE, without_echo_q / 4000.)
+        #scipy.io.wavfile.write("no_echo_q.wav", SAMPLE_RATE, without_echo_i / 4000.)
 
     #plot.plot(data)
     #plot.plot(without_echo)
