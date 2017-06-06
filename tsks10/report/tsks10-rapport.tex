@@ -14,6 +14,35 @@
 %  Följande tillhandahåller miljön spver­ba­tim som är lämplig för att typsätta programkod.
 \usepackage{spverbatim}
 
+% To include images
+\usepackage{graphicx}
+
+% For syntax highlighted code
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{%
+    aboveskip=3mm,
+    belowskip=3mm,
+    showstringspaces=false,
+    columns=flexible,
+    basicstyle={\small\ttfamily},
+    numbers=none,
+    numberstyle=\tiny\color{red},
+    keywordstyle=\color{blue},
+    commentstyle=\color{dkgreen},
+    stringstyle=\color{mauve},
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=3
+}
+
+% Convenience commands
+\newcommand{\echodelay}{\tau}
+
 \raggedbottom
 \sloppy
 
@@ -21,7 +50,7 @@
 
 \author{Frans Skarman \\ frask812, 9509085552 }
 
-\date{18 maj, 2017}
+\date{19 maj, 2017}
 
 \begin{document}
 
@@ -34,17 +63,17 @@ tillsammans med andra signaler i en .wav fil. I och Q delen av signalen skulle
 bestå av två separata melodier följt av två ordspråk.
 
 Utöver den sökta signalen innehöll även datan två signaler med andra bärfrekvenser
-och ett simulerat eko med okänd tidsfördröjning. Hela signalen var även tidsförskjuten
+och ett simulerat eko med okänd tidsfördröjning. Hela signalen var fasfrörskjuten
 för att simulera osynkroniserade klockor på sändare och mottagare. Datan innehöll
 även två stycken cosinus-signaler med närliggande frekvenser som kunde utnyttjas för
 att bestämma ekots fördröjning.
 
-I uppgiften ingick en lista på vilka bärfrekvenser huvudsignalerna kunde användas och
-en maxgräns på ekots tidsfördröjning som var $500ms$. Det var även givet att amplituden
-på den ekande signalen var $0.9*x(t-\delta)$ där x den skickade signalen och delta
-är ekots tidsfördröjning.
+I uppgiften ingick en lista på vilka bärfrekvenser huvudsignalerna kunde använda.
+Det var även givet att amplituden på den ekande signalen var $0.9*x(t-\echodelay)$
+där $x(t)$ den skickade signalen och $\echodelay$ är ekots tidsfördröjning som var
+mindre än $500ms$.
 
-Det var givet i uppgiften att den givna datans sample-rate $f_s$ var $400kHz$
+Det var givet i uppgiften att den givna datans samplingstakt $f_s$ var $400kHz$
 
 
 
@@ -56,53 +85,135 @@ Alla beräkingar gjordes med python-biblioteken scipy och numpy. För att lyssna
 signalerna användes initialt programmet audacity men det byttes senare ut mot python-biblioteket
 sounddevice.
 
-Det första som gjordes var att fouriertransformera den givna signalen och plotta
-dess spektrum. Genom att analysera spektrumet visades det att signalen bestog av tre
-delsignaler med frekvenser $FREKVENSER$ samt två cosinussignaler med $FREKVENSER$.
+\subsection{Bestämning av bärfrekvens}
 
-En funktion för att göra de första stegen i demodulationen IQ signalerna skrevs. Denna
-funktion multiplicerade den givna signalen med en en signal $cos(2\pi*f_c*t)$ där $f_c$
-är bärfrekvensen för signalen. Den resulterande signalen filtreras sedan med ett 
+Det första som gjordes var att fouriertransformera den givna signalen, $x_{given}(t)$, och plotta
+dess spektrum. Genom att analysera spektrumet visades det att signalen bestog av tre
+delsignaler med frekvenser $75kHz$, $115kHz$ och $151kHz$ samt två cosinussignaler med 
+frekvenser $160500Hz$ och $160501Hz$. Signalens spektrum kan ses i Figur \ref{fig:spectrum}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.85\linewidth]{spectrum.pdf}
+    \caption{Amplitudspektrum för $x(t)$}
+    \label{fig:spectrum}
+\end{figure}
+
+För att hitta vilken av de tre huvudsignalerna som innehöll den sökta informationen
+skrevs de första stegen av IQ demodulationen. Denna
+funktion multiplicerade den givna signalen $x_{given}(t)$ med signalen $cos(2\pi f_c t)$ där $f_c$
+är bärfrekvensen för signalen. Den resulterande signalen filtrerades sedan med ett 
 butterworth-lågpassfilter med gränsfrekvens $5 kHz$. Gränsfrekvensen valdes eftersom
-att signalernas bandbredd var ungefär $5 kHz$
+att signalernas bandbredd var ungefär $5 kHz$.
 
 Denna funktion användes för att demodulera de tre nyttosignalerna och resultatet spelades
 upp med audacity. En av signalerna visade sig vara brus, en var fågelkvitter och en började
 med vad som lät som två överlagrade melodier. Den sistnämnda signalen hade bärfrekvensen 151kHz
 och är signalen som resten av rapporten kommer att analysera.
 
-Nästa steg var att ta bort ekot från signalen vilket började med att hitta ekots tidsfördröjnign $\delta$.
+\subsection{Ekoborttagning}
+Nästa steg var att ta bort ekot från signalen vilket började med att hitta tidsfördröjningen
+mellan den mottagna signalen och dess eko, $\echodelay=\tau_2-\tau_2$.
 För att göra detta korrelerades de $100000$ första samplen
-av signalen med de efterföljande $400000$ vilket med datans sample-rate motsvarar en sekund.
-$400000$ valdes eftersom att det motsvarar en sekund med den givna sample-raten,
-och att det i uppgiften var givet att ekots fördröjning var mindre än $500ms$
+av signalen med de efterföljande $400000$ vilket med datans samplingstakt motsvarar en sekund.
 
 Korrelationen gav ett maximalt värde vid sampel $63999$ vilket med den initiala förskjutningen på
-$100000$ sampel gav ekots tidsfördröjning $\delta=163999$ sampel eller $0.41s$.
+$100000$ sampel gav ekots tidsfördröjning $\echodelay=163999$ sampel eller $0.41s$.
 
-Eftersom att ekot inte påverkar de första $\delta$ sampeln kunde värdet på signalen $x(t+\delta)$ beräknas
-som $x(t+\delta) - 0.9*x(t)$.
+Eftersom att ekot inte påverkar de första $\echodelay$ sampeln kunde värdet på signalen $x(t)$ beräknas
+som $x_{given}(t) - 0.9*x(t-\echodelay)$
+.
+
+\subsection{Fullständing IQ demodulering}
+
+För att fullständigt demodulera de två I och Q komponenterna beräknades signalerna 
+$\hat{x}_Q$ och $\hat{x}_I$ enlgit följande formler:
+
+\[
+    \hat{x}_I(t) = 2 * x(t) * cos(2\pi f_c t)
+\]
+\[
+    \hat{x}_Q(t) = 2 * x(t) * sin(2\pi f_c t)
+\]
+
+Eftersom att mottagarens klocka inte var synkroniserad med sändaren blandades I och Q komponenterna
+i den mottagna signalen enligt ekvation \ref{eq:iq_mix} där $\delta$ är tidsfördröjningen mellan sändaren och mottagaren.
+
+\begin{equation}
+    \label{eq:iq_mix}
+    \left[
+        \begin{array}{c}
+            \hat{x}_I(t) \\
+            \hat{x}_Q(t)
+        \end{array}
+    \right]
+    =
+    \left[
+        \begin{array}{cc}
+            cos(\delta) & sin(\delta) \\
+            -sin(\delta) & cos(\delta)
+        \end{array}
+    \right]
+    \left[
+        \begin{array}{c}
+            x_I(t) \\
+            x_Q(t)
+        \end{array}
+    \right]
+\end{equation}
+
+För att beräkna de skickade signalerna $\x_I(t)$ och $\x_Q(t)$ användes ekvation \ref{eq:iq_demix} som
+fanns med i facit till uppgift 2.13 i kursboken.
+\begin{equation}
+    \label{eq:iq_demix}
+    \left[
+        \begin{array}{c}
+            x_I(t) \\
+            x_Q(t)
+        \end{array}
+    \right]
+    =
+    \left[
+        \begin{array}{cc}
+            cos(\delta) & -sin(\delta) \\
+            sin(\delta) & cos(\delta)
+        \end{array}
+    \right]
+    \left[
+        \begin{array}{c}
+            \hat{x}_I(t) \\
+            \hat{x}_Q(t)
+        \end{array}
+    \right]
+\end{equation}
+
+
+Eftersom att ekvation \ref{eq:iq_mix} motsvarar en vridning så räckte det med att hitta ett 
+$0 \leq \delta \leq 2\pi$ som separerade I- och Q-komponenterna.
+Eftersom att det i den här labben inte var viktigt att hitta vilken av de två mottagna signalerna som
+motsvarar de skickade I- och Q-signalerna utan bara att separera signalerna, och att det för ljud inte spelar
+någon roll om fasen är förskjuten ett halvt varv räckte det med att hitta ett 
+$0 \leq \delta \leq \frac{\pi}{2}$
+
+Detta gjordes genom att stega igenom olika värden på delta med en hitta ett värde
+där de två signalerna var så separerade att man kunde höra de två ordspråken. Detta gav 
+$\delta=\frac{3\pi}{8}$.
+
 
 \section{Resultat}
 
 Den sökta informationen är:
 \begin{itemize}
-\item Bärfrekvensen för nyttosignalen är $f_c=...$
-\item ...
+\item Bärfrekvensen för nyttosignalen är $f_c=151kHz$
+\item Differensen $\tau_2-\tau_1=410ms$
+\item Första ordspråket var "Vart man än vänder sig, så har man ändan bak"
+\item Andra ordspråket var "Tala är silver, tiga är guld"
 \end{itemize}
 
 \clearpage
 
+\onecolumn
 \section*{Min Python-kod:}
-\begin{spverbatim}
-clear all
-close all
-
-for k=1:...
-  ...
-end
-
-plot(...,...)
-\end{spverbatim}
+\lstinputlisting[language=Python]{../main.py}
 
 \end{document}

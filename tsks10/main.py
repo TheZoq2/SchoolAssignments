@@ -11,7 +11,6 @@ import sounddevice
 
 from scipy.fftpack import fft, ifft
 
-import random
 
 SAMPLE_RATE = 400 * 10**3
 SAMPLE_SPACING = 1 / SAMPLE_RATE
@@ -51,72 +50,29 @@ def remove_carrier_frequency(sample_rate, data, carrier_freq, delta=0):
     sample_spacing = 1 / sample_rate
     sample_amount = len(data)
 
-    #generate a cosine wave at the correct sample rate
     samples = np.linspace(0, sample_amount*sample_spacing, sample_amount)
 
+    #cosine and sine waves at the correct sample rate
     cosine = 2 * np.cos((np.pi * 2 * carrier_freq * samples))
     sine = 2 * np.sin((np.pi * 2 * carrier_freq * samples))
-    #plot.plot(sine)
 
-    #Multiply the data with the cos wave
+    #Multiply the data with the cos waves
     modulated_i = data * cosine;
     modulated_q = data * sine;
 
-
-
-    #plot_fft(fft(modulated), sample_rate, sample_amount)
-
-    #Filter the modulated signal
+    #Filter the demodulated signals
     filtered_i = butter_lowpass_filter(modulated_i, CUTOFF_FREQ, sample_rate)
     filtered_q = butter_lowpass_filter(modulated_q, CUTOFF_FREQ, sample_rate)
     #plot_fft(fft(filtered), sample_rate, sample_amount)
 
 
-    #plot.plot(filtered_q[:441000])
-    #plot.plot(filtered_i[:441000])
-    #plot.plot(filtered)
-
     #scipy.io.wavfile.write("filtered.wav", sample_rate, filtered / 4000.)
 
-    final_i = filtered_i
-    final_q = filtered_q
     final_i = filtered_i*np.cos(delta) - filtered_q*np.sin(delta)
     final_q = filtered_i*np.sin(delta) + filtered_q*np.cos(delta)
 
-    #plot.plot(cosine[:3000])
-    #plot.plot(final_q)
-
     return (final_i, final_q)
 
-
-
-def signal_similarity(signals):
-    (signal1, signal2) = signals
-    # The amount of samples to compare
-    sample_size = 10000
-
-    samples1 = signal1[:sample_size]
-    samples2 = signal2[:sample_size]
-
-    correlated = np.correlate(samples1, samples2, mode='full')
-    plot.plot(correlated)
-    return np.max(correlated)
-
-def find_delta(sample_rate, data, carrier_freq):
-    step_amount = 100
-
-    result = np.linspace(0, 0, step_amount)
-
-    for i in range(0,step_amount):
-        delta = np.pi / 2 * (i/step_amount)
-
-        signals = remove_carrier_frequency(sample_rate, data, carrier_freq, delta)
-
-        similarity = signal_similarity(signals)
-        print(similarity, delta, i)
-        result[i] = similarity
-
-    plot.plot(result)
 
 
 #Returns the sample at which the echo starts affecting the signal
@@ -158,7 +114,7 @@ def main():
     (fs, data) = scipy.io.wavfile.read("signal.wav")
 
     transformed = fft(data)
-    #plot_fft(transformed, fs, len(data))
+    plot_fft(transformed, fs, len(data))
 
     step_amount=1
     for i in range(0, step_amount):
@@ -166,7 +122,7 @@ def main():
         #find_delta(fs, data, CARRIER_FREQ)
         #interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, np.pi / 2 * i/step_amount)
         #interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 43/100)
-        interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 64/100)
+        interesting_signals = remove_carrier_frequency(fs, data, CARRIER_FREQ, math.pi / 2 * 75/100)
 
         normalized_signal = interesting_signals[0] / np.max(np.abs(interesting_signals[0]))
 
@@ -184,9 +140,6 @@ def main():
         sounddevice.play(downsampled_q/8000, 44100, blocking=True)
         #scipy.io.wavfile.write("no_echo_i.wav", SAMPLE_RATE, without_echo_q / 4000.)
         #scipy.io.wavfile.write("no_echo_q.wav", SAMPLE_RATE, without_echo_i / 4000.)
-
-    #plot.plot(data)
-    #plot.plot(without_echo)
 
 
     plot.show()
