@@ -115,8 +115,15 @@ def main():
 
     transformed = fft(data)
     plot_fft(transformed, fs, len(data))
+    font = {'family' : 'normal',
+            'weight' : 'bold',
+            'size'   : 15}
 
-    step_amount=1
+    matplotlib.rc('font', **font)
+    plot.xlabel("Frekvens (Hz)", fontsize=13)
+    plot.ylabel("Amplitud", fontsize=13)
+
+    step_amount=0
     for i in range(0, step_amount):
         print(i)
         #find_delta(fs, data, CARRIER_FREQ)
