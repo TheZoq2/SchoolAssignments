@@ -57,7 +57,7 @@
 
 \author{Frans Skarman \\ frask812, 9509085552 }
 
-\date{6 Juni, 2017}
+\date{7 Juni, 2017}
 
 \begin{document}
 
@@ -79,7 +79,7 @@ skulle också bestämmas.
 
 I uppgiften ingick en lista på vilka bärfrekvenser huvudsignalerna kunde använda.
 Det var även givet att amplituden på den ekande signalen var $0.9 x(t-\echodelay)$
-där $x(t)$ den skickade signalen och $\echodelay$ är ekots tidsfördröjning som var
+där $x(t)$ är den skickade signalen och $\echodelay$ är ekots tidsfördröjning som var
 mindre än $500 \text{ ms}$.
 
 Den givna datans samplingstakt $f_s$ var $400 \text{ kHz}$
@@ -96,10 +96,17 @@ sounddevice.
 
 \subsection{Bestämning av bärfrekvens}
 
-Det första som gjordes var att fouriertransformera den givna signalen, $x_{given}(t)$, och plotta
+Det första som gjordes var att fouriertransformera de givna signalen, $x_{given}(t)$, och plotta
 dess spektrum. Genom att analysera spektrumet visades det att signalen bestog av tre
-delsignaler med frekvenser $75 \text{ kHz}$, $115 \text{ kHz}$ och $151 \text{ kHz}$ samt två cosinussignaler med 
-frekvenser $160500 \text{ Hz}$ och $160501 \text{ Hz}$. Signalens spektrum kan ses i Figur \ref{fig:spectrum}.
+delsignaler ($s_1$, $s_2$ och $s_3$) med frekvenser runt $75 \text{ kHz}$, 
+$115 \text{ kHz}$ och $151 \text{ kHz}$ samt två
+cosinussignaler med frekvenser $f_1 = 160500 \text{ Hz}$ och $f_2 = 160501 \text{ Hz}$.
+Signalen $x_{given}(t)$ kan alltså beskrivas som
+
+\[
+    x_{given}(t) = s_1(t) + s_2(t) + s_3(t) + cos(2\pi f_1 t) + cos(2\pi f_2 t)
+\]
+och signalens spektrum kan ses i Figur \ref{fig:spectrum}.
 
 \begin{figure}[h]
     \centering
@@ -108,49 +115,45 @@ frekvenser $160500 \text{ Hz}$ och $160501 \text{ Hz}$. Signalens spektrum kan s
     \label{fig:spectrum}
 \end{figure}
 
-För att hitta vilken av de tre huvudsignalerna som innehöll den sökta informationen
-skrevs de första stegen av IQ-demodulationen. Denna
-funktion multiplicerade den givna signalen $x_{given}(t)$ med signalen $\cos(2\pi f_c t)$ där $f_c$
-är bärfrekvensen för signalen. Den resulterande signalen filtrerades sedan med ett 
-butterworth-lågpassfilter med gränsfrekvens $5 \text{ kHz}$. Gränsfrekvensen valdes eftersom
-att signalernas bandbredd var ungefär $5 \text{ kHz}$.
 
-Den demodulerade signalen $x(t)$ beräknades altså enligt
+För att hitta vilken av de tre signalerna $s_1$, $s_2$ och $s_3$ som innehöll den sökta informationen
+skrevs de första stegen av IQ-demodulationen. Detta gjordes med följande formel
+
+\[
+    x(t) = \lpfilter\{ x_{given}(t) \cdot \cos(2\pi f_c t) \}
+\]
+
+
+som användes för att demodulera de givna signalen $x_{given}(t)$ med olika värden på $f_c$. Resultatet
+av detta spelades upp i audacity. Med $f_c = 75 \text{ kHz}$ lät resultatet som fågelkvitter,
+med $f_c = 115 \text{ kHz}$ lät det som brus och med $f_c = 151 \text{ kHz}$ lät resultatet som
+två överlagrade melodier. I resten av rapporten kommer därför $f_c = 151\text{ kHz}$ vilket gav
 
 \begin{equation}
-    x(t) = \lpfilter\{ x_{given}(t) \cdot \cos(2\pi f_c t) \}
+    x(t) = \lpfilter\{ x_{given}(t) \cdot \cos(2\pi \cdot 151 \cdot 10^3 \cdot t) \}
 \end{equation}
-
-
-
-
-Denna funktion användes för att demodulera de tre nyttosignalerna och resultatet spelades
-upp med audacity. En av signalerna visade sig vara brus, en var fågelkvitter och en började
-med vad som lät som två överlagrade melodier. Den sistnämnda signalen hade bärfrekvensen 151kHz
-och är signalen som resten av rapporten kommer att analysera.
-
 
 
 
 \subsection{Ekotidsfördröjning}
 Nästa steg som gjordes var att hitta tidsfördröjningen
-mellan den mottagna signalen och dess eko, $\echodelay=\tau_2-\tau_2$.
+mellan den mottagna signalen och dess eko, $\echodelay$.
 För att göra detta autokorrelerades de $100000$ första samplen
 av signalen med de efterföljande $400000$ vilket med datans samplingstakt motsvarar en sekund.
 
 Autokorrelationen gav ett maximalt värde vid sampel $63999$ vilket med den initiala förskjutningen på
 $100000$ sampel gav ekots tidsfördröjning $\echodelay=163999$ sampel eller $0.41 \text{ s}$.
 
-\subsection{Fullständing IQ demodulering}
+\subsection{Fullständig IQ demodulering}
 
-För att fullständigt demodulera de två I och Q komponenterna, $x_i(t)$ och $x_q(t)$, beräknades signalerna 
-$\hat{x}_Q$ och $\hat{x}_I$ enlgit följande formler där $f_c = 151\text{ kHz}$:
+För att fullständigt demodulera de två I och Q komponenterna, $x_I(t)$ och $x_Q(t)$, beräknades signalerna 
+$\hat{x}_Q$ och $\hat{x}_I$ enligt följande formler där $f_c = 151\text{ kHz}$:
 
 \[
-    \hat{x}_I(t) = \lpfilter\{ 2 \bar{x}(t) \cos(2\pi f_c t) \}
+    \hat{x}_I(t) = \lpfilter\{ 2 x_{given}(t) \cos(2\pi f_c t) \}
 \]
 \[
-    \hat{x}_Q(t) = \lpfilter\{ 2 \bar{x}(t) \sin(2\pi f_c t) \}
+    \hat{x}_Q(t) = \lpfilter\{ 2 x_{given}(t) \sin(2\pi f_c t) \}
 \]
 
 Eftersom att mottagarens klocka inte var synkroniserad med sändaren blandades I och Q komponenterna
@@ -244,7 +247,7 @@ $\bar{x}_I(t)$ och $\bar{x}_Q(t)$ beräknas enligt
 Den sökta informationen är:
 \begin{itemize}
     \item Bärfrekvensen för nyttosignalen är $f_c=151 \text{ kHz}$
-    \item Differensen $\tau_2-\tau_1=410 \text{ ms}$
+    \item Differensen $\echodelay = \tau_2-\tau_1=410 \text{ ms}$
     \item Frekvenserna för de två cosinussignalerna är $f_1=160500 \text{ Hz}$ och $f_2=160500 \text{ Hz}$
     \item Första ordspråket är "Vart man än vänder sig, så har man ändan bak"
     \item Andra ordspråket är "Tala är silver, tiga är guld"
